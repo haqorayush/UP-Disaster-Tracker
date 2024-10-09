@@ -163,18 +163,6 @@ csv_data['Death Change'] = death_changes
 district_most_increase = csv_data.loc[csv_data['Death Change'].idxmax()]
 st.write(f"**District with the Most Increasing Deaths**: {district_most_increase['District'].title()}")
 
-# Calculate average percentage increase for the district with the most increasing deaths
-# Use the row corresponding to the district and access the yearly columns
-percentage_increase = csv_data.loc[district_most_increase.name, yearly_columns].pct_change() * 100
-average_percentage_increase = percentage_increase.mean()
-st.write(f"**Average Percentage Increase in Deaths**: {average_percentage_increase:.2f}%")
-
 # 4. District with the most decreasing number of deaths
 district_most_decrease = csv_data.loc[csv_data['Death Change'].idxmin()]
 st.write(f"**District with the Most Decreasing Deaths**: {district_most_decrease['District'].title()}")
-
-# Calculate average percentage decrease for the district with the most decreasing deaths
-# Use the row corresponding to the district and access the yearly columns
-percentage_decrease = csv_data.loc[district_most_decrease.name, yearly_columns].pct_change() * 100
-average_percentage_decrease = percentage_decrease.mean()
-st.write(f"**Average Percentage Decrease in Deaths**: {average_percentage_decrease:.2f}%")
