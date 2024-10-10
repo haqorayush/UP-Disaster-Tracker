@@ -19,13 +19,18 @@ geojson_data = gpd.read_file(geojson_file_path)
 csv_data['District'] = csv_data['District'].str.lower().str.strip()
 geojson_data['district'] = geojson_data['district'].str.lower().str.strip()
 
-# Create a Streamlit dropdown for selecting the year
-year_columns = csv_data.columns[2:]  # Get columns for years
-selected_year = st.selectbox('Select Year', year_columns)
+# Create a Streamlit dropdown for selecting the year or total
+year_columns = csv_data.columns[2:-1]  # Exclude 'Total' column from year selection
+year_columns_with_total = year_columns.tolist() + ['Total']  # Add 'Total' to the list
+selected_year = st.selectbox('Select Year or Total', year_columns_with_total)
 
-# Prepare filtered data for the selected year
-filtered_data = csv_data[['District', selected_year]].copy()
-filtered_data.rename(columns={selected_year: 'Deaths'}, inplace=True)
+# Prepare filtered data for the selected year or total
+if selected_year == 'Total':
+    filtered_data = csv_data[['District', 'Total']].copy()
+    filtered_data.rename(columns={'Total': 'Deaths'}, inplace=True)
+else:
+    filtered_data = csv_data[['District', selected_year]].copy()
+    filtered_data.rename(columns={selected_year: 'Deaths'}, inplace=True)
 
 # Merge the filtered data with the GeoJSON data
 merged_data = geojson_data.merge(filtered_data, left_on='district', right_on='District', how='left')
@@ -36,20 +41,20 @@ merged_data['Deaths'] = merged_data['Deaths'].fillna(0)
 # Create a Folium map
 m = folium.Map(location=[merged_data.geometry.centroid.y.mean(), merged_data.geometry.centroid.x.mean()], zoom_start=7)
 
-# Define a color scale
+# Define a color scale with 5 shades of red
 def color_scale(deaths):
     if deaths == 0:
-        return 'blue'
+        return 'white'
     elif deaths <= 50:
-        return 'green'
+        return '#ffcccc'  # Light red
     elif deaths <= 100:
-        return 'yellow'
+        return '#ff9999'  # Medium red
     elif deaths <= 150:
-        return 'orange'
+        return '#ff6666'  # Darker red
     else:
-        return 'red'
+        return '#cc0000'  # Deep red
 
-# Add GeoJSON to the map with color coding and tooltips
+# Add GeoJson to the map with color coding and tooltips
 GeoJson(
     merged_data,
     style_function=lambda feature: {
@@ -73,11 +78,11 @@ legend_html = """
      border:2px solid grey; z-index:9999; font-size:14px;
      background-color:white; padding: 10px;">
      <strong>Legend</strong><br>
-     <i style="background:blue; width:18px; height:18px; float:left; margin-right:8px;"></i> 0 Deaths<br>
-     <i style="background:green; width:18px; height:18px; float:left; margin-right:8px;"></i> 1-50 Deaths<br>
-     <i style="background:yellow; width:18px; height:18px; float:left; margin-right:8px;"></i> 51-100 Deaths<br>
-     <i style="background:orange; width:18px; height:18px; float:left; margin-right:8px;"></i> 101-150 Deaths<br>
-     <i style="background:red; width:18px; height:18px; float:left; margin-right:8px;"></i> 151+ Deaths<br>
+     <i style="background:white; width:18px; height:18px; float:left; margin-right:8px;"></i> 0 Deaths<br>
+     <i style="background:#ffcccc; width:18px; height:18px; float:left; margin-right:8px;"></i> 1-50 Deaths<br>
+     <i style="background:#ff9999; width:18px; height:18px; float:left; margin-right:8px;"></i> 51-100 Deaths<br>
+     <i style="background:#ff6666; width:18px; height:18px; float:left; margin-right:8px;"></i> 101-150 Deaths<br>
+     <i style="background:#cc0000; width:18px; height:18px; float:left; margin-right:8px;"></i> 151+ Deaths<br>
      </div>
 """
 m.get_root().html.add_child(folium.Element(legend_html))
@@ -89,16 +94,26 @@ folium_static(m)  # Render the Folium map in Streamlit
 # Add a color scale section above the "Complete Data"
 st.subheader('Color Scale Used in the Map')
 st.markdown("""
-- <span style="color: blue;">**Blue**</span>: 0 Deaths
-- <span style="color: green;">**Green**</span>: 1-50 Deaths
-- <span style="color: yellow;">**Yellow**</span>: 51-100 Deaths
-- <span style="color: orange;">**Orange**</span>: 101-150 Deaths
-- <span style="color: red;">**Red**</span>: 151+ Deaths
+- <span style="color: white;">**White**</span>: 0 Deaths
+- <span style="color: #ffcccc;">**Light Red**</span>: 1-50 Deaths
+- <span style="color: #ff9999;">**Medium Red**</span>: 51-100 Deaths
+- <span style="color: #ff6666;">**Darker Red**</span>: 101-150 Deaths
+- <span style="color: #cc0000;">**Deep Red**</span>: 151+ Deaths
 """, unsafe_allow_html=True)
 
 # Display the complete CSV table
 st.write("### Complete Data Table")
 st.dataframe(csv_data)
+
+# Percentage contribution of each district in the selected year
+st.subheader(f'Percentage Contribution of Each District in {selected_year}')
+total_deaths_in_year = csv_data[selected_year].sum() if selected_year != 'Total' else csv_data['Total'].sum()
+percentage_contributions = (csv_data[selected_year] / total_deaths_in_year * 100).fillna(0)
+contribution_table = pd.DataFrame({
+    'District': csv_data['District'],
+    'Percentage Contribution (%)': percentage_contributions
+})
+st.dataframe(contribution_table)
 
 # Comparative Data Section with Statistical Metrics
 selected_district = st.selectbox('Select District for Comparison', csv_data['District'].unique())
@@ -120,22 +135,37 @@ st.write(f"**Standard Deviation**: {std_deviation:.2f}")
 st.write(f"**Minimum Deaths**: {min_deaths}")
 st.write(f"**Maximum Deaths**: {max_deaths}")
 
-# Create a line graph for Year vs Deaths for the selected district
-st.subheader(f'Year vs Deaths for {selected_district}')
+# Create a line graph for Year vs Deaths for the selected district and total deaths in the state
+st.subheader(f'Year vs Deaths for {selected_district} vs Total State Deaths')
 plt.figure(figsize=(10, 5))
 
-# Extract the death values for the selected district
-deaths_over_years = csv_data[csv_data['District'] == selected_district].iloc[0, 2:].values
+# Extract the death values for the selected district, excluding 'Total'
+deaths_over_years = csv_data[csv_data['District'] == selected_district].iloc[0, 2:-1].values
 
-# Plot column headers (years) from the CSV on X-axis and deaths on Y-axis
-plt.plot(year_columns, deaths_over_years, marker='o')
+# Compute total deaths for the entire state for each year (sum across districts)
+state_total_deaths = csv_data[year_columns].sum()
+
+# Plot district deaths
+plt.plot(year_columns, deaths_over_years, marker='o', label=f'{selected_district.title()} Deaths')
+
+# Plot state total deaths
+plt.plot(year_columns, state_total_deaths.values, marker='o', label='Total State Deaths', linestyle='--', color='red')
+
+# Annotate values for the selected district deaths
+for i, value in enumerate(deaths_over_years):
+    plt.text(i, value, f'{value:.0f}', ha='center', va='bottom')
+
+# Annotate values for the state total deaths
+for i, value in enumerate(state_total_deaths):
+    plt.text(i, value, f'{value:.0f}', ha='center', va='bottom')
 
 # Add title and labels
-plt.title(f'Deaths Over Years in {selected_district.title()}')
+plt.title(f'Deaths Over Years in {selected_district.title()} vs Total State')
 plt.xlabel('Year')
 plt.ylabel('Deaths')
 plt.xticks(rotation=45)  # Rotate X-axis labels for better readability
 plt.grid(True)
+plt.legend()
 
 # Render the plot in Streamlit
 st.pyplot(plt)
@@ -143,11 +173,8 @@ st.pyplot(plt)
 # Add a section below "Color Scale Used in the Map"
 st.subheader("District Insights")
 
-# Yearly columns, excluding 'Total Deaths' if it exists
-yearly_columns = ['2018-19', '2019-20', '2020-21', '2021-22', '2022-23', '2023-24']
-
 # 1. District with the most deaths (based on total deaths across all years)
-csv_data['Total Deaths'] = csv_data[yearly_columns].sum(axis=1)
+csv_data['Total Deaths'] = csv_data[year_columns].sum(axis=1)
 district_most_deaths = csv_data.loc[csv_data['Total Deaths'].idxmax()]
 st.write(f"**District with Most Deaths**: {district_most_deaths['District'].title()} with {district_most_deaths['Total Deaths']} deaths")
 
@@ -157,7 +184,7 @@ st.write(f"**District with Least Deaths**: {district_least_deaths['District'].ti
 
 # 3. District with the most increasing number of deaths
 # Calculate the gradient of deaths year-over-year for each district
-death_changes = csv_data[yearly_columns].diff(axis=1).sum(axis=1)
+death_changes = csv_data[year_columns].diff(axis=1).sum(axis=1)
 csv_data['Death Change'] = death_changes
 
 district_most_increase = csv_data.loc[csv_data['Death Change'].idxmax()]
@@ -166,3 +193,19 @@ st.write(f"**District with the Most Increasing Deaths**: {district_most_increase
 # 4. District with the most decreasing number of deaths
 district_most_decrease = csv_data.loc[csv_data['Death Change'].idxmin()]
 st.write(f"**District with the Most Decreasing Deaths**: {district_most_decrease['District'].title()}")
+
+# Pie chart for contribution of the selected district in the selected year
+total_deaths_in_year = csv_data[selected_year].sum()
+selected_district_deaths = csv_data[csv_data['District'] == selected_district][selected_year].values[0]
+
+# Prepare data for pie chart
+pie_data = [selected_district_deaths, total_deaths_in_year - selected_district_deaths]
+labels = [selected_district.title(), 'Other Districts']
+colors = ['lightblue', 'lightgrey']
+
+# Create pie chart
+plt.figure(figsize=(7, 7))
+plt.pie(pie_data, labels=labels, autopct='%1.1f%%', startangle=90, colors=colors)
+plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
+plt.title(f'Contribution of {selected_district.title()} in {selected_year}')
+st.pyplot(plt)
