@@ -39,15 +39,16 @@ m = folium.Map(location=[merged_data.geometry.centroid.y.mean(), merged_data.geo
 # Define a new color scale with maroon to pale cream
 def color_scale(deaths):
     if deaths == 0:
-        return '#800000'  # Maroon
+        return '#CFBD99'  # Pale Cream
     elif deaths <= 50:
-        return '#FF0000'  # Red
+        return '#FFFF00'  # Yellow
+        
     elif deaths <= 100:
         return '#FFA500'  # Orange
     elif deaths <= 150:
-        return '#FFFF00'  # Yellow
+        return '#FF0000'  # Red
     else:
-        return '#CFBD99'  # Pale Cream
+        return '#800000'  # Maroon
 
 # Add GeoJSON to the map with color coding and tooltips
 GeoJson(
@@ -89,11 +90,11 @@ folium_static(m)  # Render the Folium map in Streamlit
 # Add a color scale section above the "Complete Data"
 st.subheader('Color Scale Used in the Map')
 st.markdown("""
-- <span style="color: #800000;">**Maroon**</span>: 0 Deaths
-- <span style="color: #FF0000;">**Red**</span>: 1-50 Deaths
+- <span style="color: #800000;">**Maroon**</span>: 151+ Deaths
+- <span style="color: #FF0000;">**Red**</span>: 101-150 Deaths
 - <span style="color: #FFA500;">**Orange**</span>: 51-100 Deaths
-- <span style="color: #FFFF00;">**Yellow**</span>: 101-150 Deaths
-- <span style="color: #CFBD99;">**Pale Cream**</span>: 151+ Deaths
+- <span style="color: #FFFF00;">**Yellow**</span>: 1-50 Deaths
+- <span style="color: #CFBD99;">**Pale Cream**</span>: 0 Deaths
 """, unsafe_allow_html=True)
 
 # Display the complete CSV table
