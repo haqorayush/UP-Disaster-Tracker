@@ -166,7 +166,7 @@ st.pyplot(plt)
 st.subheader("State Insight")
 
 # Yearly columns, excluding '2018-19 till 2023-24' column
-yearly_columns = ['2018-19', '2019-20', '2020-21', '2021-22', '2022-23', '2023-24']
+yearly_columns = ['2018-19', '2019-20', '2020-21', '2021-22', '2022-23', '2023-24' , '2024-25']
 
 # 1. District with the most deaths (based on total deaths across all years)
 csv_data['Total Deaths'] = csv_data[yearly_columns].sum(axis=1)
