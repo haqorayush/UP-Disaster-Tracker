@@ -131,7 +131,7 @@ st.write(f"**Maximum Deaths**: {int(max_deaths)}")  # Convert to integer
 
 # Create a line graph for Year vs Deaths for the selected district
 st.subheader(f'Year vs Deaths for {selected_district}')
-plt.figure(figsize=(10, 5))
+plt.figure(figsize=(10, 6))
 
 # Extract the death values for the selected district excluding the last column
 deaths_over_years = csv_data[csv_data['District'] == selected_district].iloc[0, 2:8].values  # Adjust index to ensure it selects only the year columns
@@ -165,7 +165,7 @@ st.pyplot(plt)
 # Add "State Insight" section (formerly District Insights)
 st.subheader("State Insight")
 
-# Yearly columns, excluding '2018-19 till 2023-24' column
+# Yearly columns, excluding '2018-19 till 2024-2' column
 yearly_columns = ['2018-19', '2019-20', '2020-21', '2021-22', '2022-23', '2023-24' , '2024-25']
 
 # 1. District with the most deaths (based on total deaths across all years)
@@ -187,3 +187,13 @@ st.write(f"**District with the Most Increasing Deaths**: {district_most_increase
 # 4. District with the most decreasing number of deaths
 district_most_decrease = csv_data.loc[csv_data['Death Change'].idxmin()]
 st.write(f"**District with the Most Decreasing Deaths**: {district_most_decrease['District'].title()}")
+
+# Add a new section for displaying the top 5 districts with the most deaths
+st.subheader("Top 5 Districts with the Most Deaths")
+top_5_districts = csv_data.nlargest(5, 'Total Deaths')[['District', 'Total Deaths']]
+st.dataframe(top_5_districts)
+
+# Add a new section for displaying the bottom 5 districts with the least deaths
+st.subheader("Bottom 5 Districts with the Least Deaths")
+bottom_5_districts = csv_data.nsmallest(5, 'Total Deaths')[['District', 'Total Deaths']]
+st.dataframe(bottom_5_districts)
