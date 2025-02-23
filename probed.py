@@ -131,10 +131,10 @@ st.write(f"**Maximum Deaths**: {int(max_deaths)}")  # Convert to integer
 
 # Create a line graph for Year vs Deaths for the selected district
 st.subheader(f'Year vs Deaths for {selected_district}')
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(10, 7))
 
 # Extract the death values for the selected district excluding the last column
-deaths_over_years = csv_data[csv_data['District'] == selected_district].iloc[0, 2:8].values  # Adjust index to ensure it selects only the year columns
+deaths_over_years = csv_data[csv_data['District'] == selected_district].iloc[0, 2:9].values  # Adjust index to ensure it selects only the year columns
 
 # Plot column headers (years) from the CSV on X-axis and deaths on Y-axis
 plt.plot(year_columns[:-1], deaths_over_years, marker='o')  # Exclude the last year from the x-axis
@@ -165,7 +165,7 @@ st.pyplot(plt)
 # Add "State Insight" section (formerly District Insights)
 st.subheader("State Insight")
 
-# Yearly columns, excluding '2018-19 till 2024-2' column
+# Yearly columns, excluding '2018-19 till 2024-25' column
 yearly_columns = ['2018-19', '2019-20', '2020-21', '2021-22', '2022-23', '2023-24' , '2024-25']
 
 # 1. District with the most deaths (based on total deaths across all years)
